@@ -3,12 +3,17 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using PowerPositionReporter.Services;
+using Serilog;
 using TranscriptsProcessor.Services;
 
 internal class Program
 {
-    private static void Main(string[] args)
+    private static async Task Main(string[] args)
     {
+        Log.Logger = new LoggerConfiguration()
+            .WriteTo.File("logs/powerPositionReporter.txt", rollingInterval: RollingInterval.Day)
+            .CreateLogger();
+
         IConfiguration configuration = new ConfigurationBuilder()
                         .SetBasePath(AppContext.BaseDirectory)
                         .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
@@ -23,18 +28,17 @@ internal class Program
             var powerService = serviceProvider.GetService<IPowerService>();
             var manager = serviceProvider.GetService<ICsvManager>();
 
-            void extractAction()
+            async Task extractAction()
             {
-                Console.WriteLine("Running extract...");
                 var path = configuration.GetValue<string>("Path");
                 var manager = new CsvManager(managerLogger, powerService);
-                Task.Run(() => manager.GenerateReportAsync(path));
+                await manager.GenerateReportAsync(path);
             }
 
             var intervalInMinutes = configuration.GetValue<int>("IntervalInMinutes");
 
             var scheduler = new Scheduler(schedulerLogger, extractAction, intervalInMinutes);
-            scheduler.Start();
+            await scheduler.Start();
         }
         catch (Exception ex)
         {
@@ -47,6 +51,7 @@ internal class Program
         var serviceProvider = new ServiceCollection()
             .AddLogging(builder =>
             {
+                builder.AddSerilog();
                 builder.AddConfiguration(configuration.GetSection("Logging"));
                 builder.AddConsole();
             })
