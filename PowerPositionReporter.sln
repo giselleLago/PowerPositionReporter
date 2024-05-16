@@ -5,6 +5,8 @@ VisualStudioVersion = 17.9.34607.119
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PowerPositionReporter", "PowerPositionReporter\PowerPositionReporter.csproj", "{E54D2943-A145-4AEE-B076-851ACB88BA1F}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PowerPositionReporterTests", "PowerPositionReporterTests\PowerPositionReporterTests.csproj", "{9E88A644-36D1-402B-A445-8451412EBF58}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{E54D2943-A145-4AEE-B076-851ACB88BA1F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E54D2943-A145-4AEE-B076-851ACB88BA1F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E54D2943-A145-4AEE-B076-851ACB88BA1F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E88A644-36D1-402B-A445-8451412EBF58}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E88A644-36D1-402B-A445-8451412EBF58}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E88A644-36D1-402B-A445-8451412EBF58}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E88A644-36D1-402B-A445-8451412EBF58}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
