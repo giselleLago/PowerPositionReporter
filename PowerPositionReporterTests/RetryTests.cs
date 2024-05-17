@@ -21,8 +21,11 @@ namespace PowerPositionReporterTests
              .ReturnsAsync(() => powerTrades);
 
             var filePath = $".\\";
+            var retryAttempts = 3;
+            var location = "Europe/Berlin";
+            
             var manager = new CsvManager(mockLogger.Object, mockPowerService.Object);
-            await manager.GenerateReportAsync(filePath);
+            await manager.GenerateReportAsync(filePath, retryAttempts, location);
 
             mockPowerService.Verify(x => x.GetTradesAsync(It.IsAny<DateTime>()), Times.Once);
         }
@@ -52,10 +55,37 @@ namespace PowerPositionReporterTests
              });
 
             var filePath = $".\\";
+            var retryAttempts = 3;
+            var location = "Europe/Berlin";
+
             var manager = new CsvManager(mockLogger.Object, mockPowerService.Object);
-            await manager.GenerateReportAsync(filePath);
+            await manager.GenerateReportAsync(filePath, retryAttempts, location);
 
             mockPowerService.Verify(x => x.GetTradesAsync(It.IsAny<DateTime>()), Times.Exactly(2));
+        }
+
+        [Fact]
+        public async Task GetTradesReturnsException_RetryIsExecuted_NotAbleToExtractData()
+        {
+
+            var powerTrade1 = PowerTrade.Create(DateTime.UtcNow.AddDays(1), 24);
+            var powerTrade2 = PowerTrade.Create(DateTime.UtcNow.AddDays(1), 24);
+            var powerTrades = new List<PowerTrade> { powerTrade1, powerTrade2 };
+
+            var mockLogger = new Mock<ILogger<CsvManager>>();
+            var mockPowerService = new Mock<IPowerService>();
+
+            mockPowerService.Setup(x => x.GetTradesAsync(It.IsAny<DateTime>()))
+             .Throws(new PowerServiceException("Error retrieving power volumes"));
+
+            var filePath = $".\\";
+            var retryAttempts = 3;
+            var location = "Europe/Berlin";
+
+            var manager = new CsvManager(mockLogger.Object, mockPowerService.Object);
+            await manager.GenerateReportAsync(filePath, retryAttempts, location);
+
+            mockPowerService.Verify(x => x.GetTradesAsync(It.IsAny<DateTime>()), Times.Exactly(3));
         }
     }
 }

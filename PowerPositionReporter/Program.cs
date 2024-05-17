@@ -31,8 +31,10 @@ internal class Program
             async Task extractAction()
             {
                 var path = configuration.GetValue<string>("Path");
+                var location = configuration.GetValue<string>("Location");
+                var maxRetryAttempt = configuration.GetValue<int>("MaxRetryAttempt");
                 var manager = new CsvManager(managerLogger, powerService);
-                await manager.GenerateReportAsync(path);
+                await manager.GenerateReportAsync(path, maxRetryAttempt, location);
             }
 
             var intervalInMinutes = configuration.GetValue<int>("IntervalInMinutes");
@@ -46,7 +48,7 @@ internal class Program
         }
     }
 
-    static IServiceProvider ConfigureServices(IConfiguration configuration)
+    private static ServiceProvider ConfigureServices(IConfiguration configuration)
     {
         var serviceProvider = new ServiceCollection()
             .AddLogging(builder =>

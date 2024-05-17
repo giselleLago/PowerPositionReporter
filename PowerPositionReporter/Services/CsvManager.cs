@@ -14,33 +14,57 @@ namespace PowerPositionReporter.Services
             PowerService = powerService;
         }
 
-        public async Task GenerateReportAsync(string outputPath)
+        public async Task GenerateReportAsync(string path, int retryAttempt, string location = "Europe/Berlin")
         {
             try
             {
+                //DST
+                var date = GetDaylightSavingTime(location);
+
                 Logger.LogInformation("Generating power position report.");
-                var trades = await PowerService.GetTradesAsync(DateTime.UtcNow.AddDays(1));
-                //var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
-                //var date = TimeZoneInfo.ConvertTimeToUtc(DateTime.Now, timeZone);
+                var trades = await PowerService.GetTradesAsync(date.AddDays(1));
+
 
                 var hourlyVolumes = ExtractData(trades);
 
                 var csvContent = GetContent(hourlyVolumes);
-                var filename = GetFileName();
-                var fullPath = Path.Combine(outputPath, filename);
+                var filename = GetFileName(date);
+                var fullPath = Path.Combine(path, filename);
 
+                Logger.LogInformation("Writing content to file: {fileName}.", filename);
                 await WriteToFileAsync(fullPath, csvContent);
             }
             catch (PowerServiceException ex)
             {
-                Logger.LogWarning("Something went wrong while extracting data: {ex}", ex);
-                await GenerateReportAsync(outputPath);
+                //Here we can use a RetryPolicy installing "Polly" NuGet Package and define the basic or the exponential backoff 
+                if (retryAttempt > 1)
+                {
+                    retryAttempt--;
+
+                    Logger.LogWarning("Something went wrong while extracting data: {ex}.", ex);
+
+                    await Task.Delay(1000);
+
+                    Logger.LogInformation("Waiting 1 second before the next attempt.");
+                    await GenerateReportAsync(path, retryAttempt, location);
+                }
+                else
+                {
+                    var date = GetDaylightSavingTime(location);
+                    Logger.LogError("The program was not able to extract data at {date} .", date);
+                }
             }
         }
 
-        private List<CsvModel> ExtractData(IEnumerable<PowerTrade> trades)
+        private static DateTime GetDaylightSavingTime(string location)
         {
-            Logger.LogInformation("Extracting power trades.");
+            var localNow = DateTime.Now;
+            var timeZone = TimeZoneInfo.FindSystemTimeZoneById(location);
+            return TimeZoneInfo.ConvertTimeToUtc(TimeZoneInfo.ConvertTime(localNow, timeZone), timeZone);
+        }
+
+        private static List<CsvModel> ExtractData(IEnumerable<PowerTrade> trades)
+        {
             return trades
                     .SelectMany(trade => trade.Periods)
                     .GroupBy(period => period.Period)
@@ -48,21 +72,18 @@ namespace PowerPositionReporter.Services
                     .ToList();
         }
 
-        private string GetContent(IEnumerable<CsvModel> csv)
+        private static string GetContent(IEnumerable<CsvModel> csv)
         {
-            Logger.LogInformation("Getting power position content.");
             return "Datetime;Volume\n" + string.Join("\n", csv.Select(v => $"{v.Datetime:yyyy-MM-ddTHH:mm:ssZ};{v.Volume.ToString("F2", CultureInfo.InvariantCulture)}"));
         }
 
-        private string GetFileName()
+        private static string GetFileName(DateTime date)
         {
-            Logger.LogInformation("Getting file name.");
-            return $"PowerPosition_{DateTime.UtcNow.AddDays(1):yyyyMMdd}_{DateTime.UtcNow:yyyyMMddHHmm}.csv";
+            return $"PowerPosition_{date.AddDays(1):yyyyMMdd}_{date:yyyyMMddHHmm}.csv";
         }
 
-        private Task WriteToFileAsync(string fullPath, string csvContent)
+        private static Task WriteToFileAsync(string fullPath, string csvContent)
         {
-            Logger.LogInformation("Writing content to CSV file.");
             return File.WriteAllTextAsync(fullPath, csvContent);
         }
 

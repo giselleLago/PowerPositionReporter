@@ -20,6 +20,8 @@ namespace TranscriptsProcessor.Services
             Logger.LogInformation("Starting scheduler service.");
             var intervalInMilliseconds = IntervalInMinutes * 60 * 1000;
 
+            do
+            {
             Logger.LogInformation("Executing extract action.");
             ExtractAction();
 

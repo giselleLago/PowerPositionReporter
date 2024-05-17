@@ -2,6 +2,6 @@
 {
     public interface ICsvManager
     {
-        Task GenerateReportAsync(string storingPath);
+        Task GenerateReportAsync(string path, int retryAttempt, string location);
     }
 }
