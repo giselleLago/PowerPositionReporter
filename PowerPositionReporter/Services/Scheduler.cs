@@ -6,42 +6,31 @@ namespace TranscriptsProcessor.Services
     public sealed class Scheduler
     {
         public Scheduler(ILogger<Scheduler> logger,
-                         Action extractAction,
+                         Func<Task> extractAction,
                          int intervalInMinutes)
         {
             Logger = logger;
             ExtractAction = extractAction ?? throw new ArgumentNullException(nameof(extractAction));
             IntervalInMinutes = intervalInMinutes;
-            Random = new Random();
         }
 
-        public void Start()
+        public async Task Start()
         {
             Logger.LogInformation("Starting scheduler service.");
             var intervalInMilliseconds = IntervalInMinutes * 60 * 1000;
 
             do
             {
-            Logger.LogInformation("Executing extract action.");
-            ExtractAction();
-
-            while (true)
-            {
-                // Calculate a random offset within +/- 1 minute
-                var offset = Random.Next(-1, 2) * 60 * 1000;
-
-                Logger.LogInformation($"Waiting {(intervalInMilliseconds + offset)/60/1000} minutes to execute extract action.");
-                // Sleep for the interval with the offset
-                Thread.Sleep(intervalInMilliseconds + offset);
-
                 Logger.LogInformation("Executing extract action.");
-                ExtractAction();
-            }
+                await ExtractAction();
+
+                Logger.LogInformation($"Waiting {IntervalInMinutes} minutes to execute extract action.");
+                await Task.Delay(intervalInMilliseconds);
+            } while (true);
         }
 
         private readonly ILogger<Scheduler> Logger;
-        private readonly Action ExtractAction;
+        private readonly Func<Task> ExtractAction;
         private readonly int IntervalInMinutes;
-        private readonly Random Random;
     }
 }
